@@ -26,7 +26,7 @@ LINQPad 自体の機能は利用していないため、LINQPad が未インス�
 
     using ObjectVisualization;
 
-    xxx.Dump()
+    xxx.Dump();
 
 または、
 
