@@ -22,19 +22,35 @@ LINQPad 自体の機能は利用していないため、LINQPad が未インス�
 ただし、調査用のコードは書く必要があり、使い終わったらそれを削除するのを忘れないようにしてください。
 
 
-C#
-using ObjectVisualization;
+#### C#
 
-ObjectWatcher.Instance.Show()
-ObjectWatcher.Instance.Dump()
+    using ObjectVisualization;
+
+    xxx.Dump()
+
 または、
-拡張メソッドの Dump()
 
-VB.NET
-Imports ObjectVisualization
+    ObjectWatcher.Instance.Show();
+    ObjectWatcher.Instance.Dump(xxx);
 
-ObjectWatcher.Instance.Show(TargetLanguageTypes.VBNET)
-ObjectWatcher.Instance.Dump()
+※基本的には、業務プログラム終了に任せて、Close メソッドを呼び出さなくてもいいです。
+
+    ObjectWatcher.Instance.Close();
+
+#### VB.NET
+
+    Imports ObjectVisualization
+
+VB.NET では、拡張メソッドの Dump() はうまく動作しません。
+
+Show メソッドの引数で、出力形式を VB.NET に設定します。
+
+    ObjectWatcher.Instance.Show(TargetLanguageTypes.VBNET)
+    ObjectWatcher.Instance.Dump(xxx)
+
+※基本的には、業務プログラム終了に任せて、Close メソッドを呼び出さなくてもいいです。
+
+    ObjectWatcher.Instance.Close()
 
 調査コードを書いたら、後はデバッグ実行します。ブレークポイントを設定しないで一気に実行してもいいですし、１行ずつステップ実行してもいいです。
 
@@ -45,12 +61,255 @@ ObjectWatcher.Instance.Dump()
 プロジェクトファイルに変更点を加えたくない場合は、動的参照して使います。
 ただし、やはり調査用のコードは書く必要があり、使い終わったらそれを削除するのを忘れないようにしてください。
 
-以下は、リフレクション処理をラップしたメソッドとそれを使う側のサンプルです。
+以下は、リフレクション処理をラップしたメソッドとそれを使う側のサンプルです。このサンプルは違いますが、シングルトンクラスにすることでどこからでもアクセスできるので、楽に使えるかもしれません。
+
+#### C# + .NET Framework 3.5 版
+
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Reflection;
+
+    static void Dump(object dumpInstance)
+    {
+        // 動的に使いたい場合
+        var dllFile = "ObjectVisualization.dll";
+        if (!File.Exists(dllFile))
+        {
+            Console.WriteLine($"not found dll: ->\r\n{dllFile}");
+            return;
+        }
+
+        // dll の参照追加したようなもの
+        var asm = Assembly.LoadFrom(dllFile);
+
+        // ObjectWatcher.Instance で生成されたインスタンスを取得したようなもの
+        var classType = asm.GetType("ObjectVisualization.ObjectWatcher");
+        var instanceType = classType.GetProperty("Instance");
+        var instance = instanceType.GetValue(null, null);
+
+        // Show() メソッドを呼び出したようなもの
+        //var langEnumType = asm.GetType("ObjectVisualization.LanguageTypes");
+        //var enumCSharp = 0;
+        //var enumVBNET = 1;
+        //var enumInstance = Convert.ChangeType(enumCSharp, Enum.GetUnderlyingType(langEnumType));
+
+        var showMethod = classType.GetMethod("Show");
+        //showMethod.Invoke(instance, new object[] { enumInstance });
+        showMethod.Invoke(instance, new object[] { null });
+
+        // Dump() メソッドを呼び出したようなもの
+        var dumpMethod = classType.GetMethod("Dump");
+        dumpMethod.Invoke(instance, new object[] { dumpInstance, new System.Diagnostics.StackFrame(1, true) });
+
+        // Close() メソッドを呼び出したようなもの
+        //Console.ReadKey();
+        //var closeMethod = classType.GetMethod("Close");
+        //closeMethod.Invoke(instance, null);
+    }
+
+    static void Main(string[] args)
+    {
+        Dump("hello, world");
+
+        var items = new List<KeyValuePair<string, int>>();
+        items.Add(new KeyValuePair<string, int>("aaa", 10));
+        items.Add(new KeyValuePair<string, int>("bbb", 20));
+        items.Add(new KeyValuePair<string, int>("ccc", 30));
+        Dump(items);
+
+        Console.ReadKey();
+        Console.WriteLine("");
+    }
 
 
 
+#### C# + .NET Framework 4.7.2 版
 
-列挙体のリフレクション指定ってどうやるのか？
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Reflection;
+
+    static void Dump(object dumpInstance)
+    {
+        // 動的に使いたい場合
+        var dllFile = "ObjectVisualization.dll";
+        if (!File.Exists(dllFile))
+        {
+            Console.WriteLine($"not found dll: ->\r\n{dllFile}");
+            return;
+        }
+
+        // dll の参照追加したようなもの
+        var asm = Assembly.LoadFrom(dllFile);
+
+        // ObjectWatcher.Instance で生成されたインスタンスを取得したようなもの
+        var classType = asm.GetType("ObjectVisualization.ObjectWatcher");
+        var instanceType = classType.GetProperty("Instance");
+        var instance = instanceType.GetValue(null, null);
+
+        // Show() メソッドを呼び出したようなもの
+        //var langEnumType = asm.GetType("ObjectVisualization.LanguageTypes");
+        //var enumCSharp = 0;
+        //var enumVBNET = 1;
+        //var enumInstance = Convert.ChangeType(enumCSharp, Enum.GetUnderlyingType(langEnumType));
+
+        var showMethod = classType.GetMethod("Show");
+        //showMethod.Invoke(instance, new object[] { enumInstance });
+        showMethod.Invoke(instance, new object[] { null });
+
+        // Dump() メソッドを呼び出したようなもの
+        var callerInfo = new System.Diagnostics.StackFrame(1, true);
+        var sourceFilePath = callerInfo.GetFileName();
+        var memberName = callerInfo.GetMethod().Name;
+        var sourceLineNumber = callerInfo.GetFileLineNumber();
+
+        var dumpMethod = classType.GetMethod("Dump");
+        dumpMethod.Invoke(instance, new object[] { dumpInstance, sourceFilePath, memberName, sourceLineNumber });
+
+        // Close() メソッドを呼び出したようなもの
+        //Console.ReadKey();
+        //var closeMethod = classType.GetMethod("Close");
+        //closeMethod.Invoke(instance, null);
+    }
+
+    static void Main(string[] args)
+    {
+        Dump("hello, world");
+
+        var items = new List<KeyValuePair<string, int>>();
+        items.Add(new KeyValuePair<string, int>("aaa", 10));
+        items.Add(new KeyValuePair<string, int>("bbb", 20));
+        items.Add(new KeyValuePair<string, int>("ccc", 30));
+        Dump(items);
+
+        Console.ReadKey();
+        Console.WriteLine("");
+    }
+
+
+#### VB.NET + .NET Framework 3.5 版
+
+    Imports System.IO
+    Imports System.Reflection
+
+    Sub Dump(ByVal dumpInstance As Object)
+
+        ' 動的に使いたい場合
+        Dim dllFile As String = "ObjectVisualization.dll"
+        If Not File.Exists(dllFile) Then
+            Console.WriteLine($"not found dll: ->{vbNewLine}{dllFile}")
+            Return
+        End If
+
+        ' dll の参照追加したようなもの
+        Dim asm As Assembly = Assembly.LoadFrom(dllFile)
+
+        ' ObjectWatcher.Instance で生成されたインスタンスを取得したようなもの
+        Dim classType As Type = asm.GetType("ObjectVisualization.ObjectWatcher")
+        Dim instanceType As PropertyInfo = classType.GetProperty("Instance")
+        Dim instance As Object = instanceType.GetValue(Nothing, Nothing)
+
+        ' Show() メソッドを呼び出したようなもの
+        Dim langEnumType As Type = asm.GetType("ObjectVisualization.LanguageTypes")
+        Dim enumCSharp As Integer = 0
+        Dim enumVBNET As Integer = 1
+        Dim enumInstance As Object = Convert.ChangeType(enumVBNET, [Enum].GetUnderlyingType(langEnumType))
+
+        Dim showMethod As MethodInfo = classType.GetMethod("Show")
+        showMethod.Invoke(instance, New Object() {enumInstance})
+
+        ' Dump() メソッドを呼び出したようなもの
+        Dim dumpMethod = classType.GetMethod("Dump")
+        dumpMethod.Invoke(instance, New Object() {dumpInstance, New StackFrame(1, True)})
+
+        ' Close() メソッドを呼び出したようなもの
+        'Console.ReadKey()
+        'Dim closeMethod As MethodInfo = classType.GetMethod("Close")
+        'closeMethod.Invoke(instance, Nothing)
+
+    End Sub
+
+    Sub Main()
+
+        Dump("hello, world")
+
+        Dim items As New List(Of KeyValuePair(Of String, Integer))
+        items.Add(New KeyValuePair(Of String, Integer)("aaa", 10))
+        items.Add(New KeyValuePair(Of String, Integer)("bbb", 20))
+        items.Add(New KeyValuePair(Of String, Integer)("ccc", 30))
+        Dump(items)
+
+        Console.ReadKey()
+        Console.WriteLine("")
+
+    End Sub
+
+
+
+#### VB.NET + .NET Framework 4.7.2 版
+
+    Imports System.IO
+    Imports System.Reflection
+
+    Sub Dump(ByVal dumpInstance As Object)
+
+        ' 動的に使いたい場合
+        Dim dllFile As String = "ObjectVisualization.dll"
+        If Not File.Exists(dllFile) Then
+            Console.WriteLine($"not found dll: ->{vbNewLine}{dllFile}")
+            Return
+        End If
+
+        ' dll の参照追加したようなもの
+        Dim asm As Assembly = Assembly.LoadFrom(dllFile)
+
+        ' ObjectWatcher.Instance で生成されたインスタンスを取得したようなもの
+        Dim classType As Type = asm.GetType("ObjectVisualization.ObjectWatcher")
+        Dim instanceType As PropertyInfo = classType.GetProperty("Instance")
+        Dim instance As Object = instanceType.GetValue(Nothing, Nothing)
+
+        ' Show() メソッドを呼び出したようなもの
+        Dim langEnumType As Type = asm.GetType("ObjectVisualization.LanguageTypes")
+        Dim enumCSharp As Integer = 0
+        Dim enumVBNET As Integer = 1
+        Dim enumInstance As Object = Convert.ChangeType(enumVBNET, [Enum].GetUnderlyingType(langEnumType))
+
+        Dim showMethod As MethodInfo = classType.GetMethod("Show")
+        showMethod.Invoke(instance, New Object() {enumInstance})
+
+        ' Dump() メソッドを呼び出したようなもの
+        Dim callerInfo As New StackFrame(1, True)
+        Dim sourceFilePath As String = callerInfo.GetFileName()
+        Dim memberName As String = callerInfo.GetMethod().Name
+        Dim sourceLineNumber As Integer = callerInfo.GetFileLineNumber()
+
+        Dim dumpMethod = classType.GetMethod("Dump")
+        dumpMethod.Invoke(instance, New Object() {dumpInstance, sourceFilePath, memberName, sourceLineNumber})
+
+        ' Close() メソッドを呼び出したようなもの
+        'Console.ReadKey()
+        'Dim closeMethod As MethodInfo = classType.GetMethod("Close")
+        'closeMethod.Invoke(instance, Nothing)
+
+    End Sub
+
+    Sub Main()
+
+        Dump("hello, world")
+
+        Dim items As New List(Of KeyValuePair(Of String, Integer))
+        items.Add(New KeyValuePair(Of String, Integer)("aaa", 10))
+        items.Add(New KeyValuePair(Of String, Integer)("bbb", 20))
+        items.Add(New KeyValuePair(Of String, Integer)("ccc", 30))
+        Dump(items)
+
+        Console.ReadKey()
+        Console.WriteLine("")
+
+    End Sub
+
 
 
 
