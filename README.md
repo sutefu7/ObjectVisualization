@@ -12,6 +12,18 @@ LINQPad 自体の機能は利用していないため、LINQPad が未インス�
 
 ## サンプルイメージ
 
+![サンプルその１](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image01.png)
+
+
+![サンプルその２](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image02.png)
+
+
+![サンプルその３](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image03.png)
+
+
+![サンプルその４](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image04.png)
+
+
 
 
 ## 使い方
