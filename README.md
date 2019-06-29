@@ -24,6 +24,9 @@ LINQPad 自体の機能は利用していないため、LINQPad が未インス�
 ![サンプルその４](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image04.png)
 
 
+![サンプルその５](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image05.png)
+
+
 
 
 ## 使い方
