@@ -26,6 +26,8 @@ LINQPad 自体の機能は利用していないため、LINQPad が未インス�
 
     using ObjectVisualization;
 
+しておいて、
+
     xxx.Dump();
 
 または、
@@ -41,7 +43,7 @@ LINQPad 自体の機能は利用していないため、LINQPad が未インス�
 
     Imports ObjectVisualization
 
-VB.NET では、拡張メソッドの Dump() はうまく動作しません。
+VB.NET では、拡張メソッドの xxx.Dump() はうまく動作できないので、シングルトン版で使います。
 
 Show メソッドの引数で、出力形式を VB.NET に設定します。
 
