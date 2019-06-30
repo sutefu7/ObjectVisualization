@@ -336,7 +336,7 @@ Show メソッドの引数で、出力形式を VB.NET に設定します。
 
 ## ダウンロード
 
-[bin.zip](https://github.com/sutefu7/ObjectVisualization/files/3342408/bin.zip "bin.zip")
+[bin.zip](https://github.com/sutefu7/ObjectVisualization/releases/download/No1/bin.zip "bin.zip")
 
 
 本プログラムは、以下の環境をターゲットにしています。
