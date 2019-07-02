@@ -28,8 +28,8 @@ namespace ConsoleApp1
     {
         static void Main(string[] args)
         {
-            //ObjectWatcher.Instance.Show();
-            ObjectWatcher.Instance.Show(LanguageTypes.VBNET);
+            ObjectWatcher.Instance.Show();
+            //ObjectWatcher.Instance.Show(LanguageTypes.VBNET);
 
             Test1();
             Test2();
@@ -1034,7 +1034,7 @@ ccc,ccc,ccc,ccc
 
             var items10b = items10.AsDataView();
             ObjectWatcher.Instance.Dump(items10b);
-
+            
             ObjectWatcher.Instance.Dump(items10b[0]);
 
             var items11 = items9.AsEnumerable();

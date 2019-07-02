@@ -36,7 +36,12 @@ namespace ObjectVisualization
             get
             {
                 if (_Instance is null)
+                {
                     _Instance = new ObjectWatcher();
+
+                    // WinForms 画面を呼び出すと、ビジュアルスタイルが適用されないバグの対応
+                    System.Windows.Forms.Application.EnableVisualStyles();
+                }
 
                 return _Instance;
             }

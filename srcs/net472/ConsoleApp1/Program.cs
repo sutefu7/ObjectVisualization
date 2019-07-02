@@ -954,44 +954,44 @@ ccc,ccc,ccc,ccc
 
             // Entity Framework(空の Code First モデル)
             // todo, 勝手に LocalDB に登録してしまうみたい？登録されてしまったデータを消したい
-            //var ds3 = new Model1();
-            //var books = ds3.Books;
-            //var authors = ds3.Authors;
-            //var items = new List<object>();
+            var ds3 = new Model1();
+            var books = ds3.Books;
+            var authors = ds3.Authors;
+            var items = new List<object>();
 
-            //foreach (var book in books)
-            //    items.Add(book);
+            foreach (var book in books)
+                items.Add(book);
 
-            //foreach (var item in items)
-            //    books.Remove(item as Book);
+            foreach (var item in items)
+                books.Remove(item as Book);
 
-            //items.Clear();
+            items.Clear();
 
-            //foreach (var author in authors)
-            //    items.Add(author);
+            foreach (var author in authors)
+                items.Add(author);
 
-            //foreach (var item in items)
-            //    authors.Remove(item as Author);
+            foreach (var item in items)
+                authors.Remove(item as Author);
 
-            //items.Clear();
-            //ds3.SaveChanges();
+            items.Clear();
+            ds3.SaveChanges();
 
-            //ObjectWatcher.Instance.Dump(ds3);
+            ObjectWatcher.Instance.Dump(ds3);
 
-            //authors.Add(new Author() { Id = 10, Name = "aaa" });
-            //authors.Add(new Author() { Id = 20, Name = "bbb" });
-            //authors.Add(new Author() { Id = 30, Name = "ccc" });
-            //ds3.SaveChanges();
+            authors.Add(new Author() { Id = 10, Name = "aaa" });
+            authors.Add(new Author() { Id = 20, Name = "bbb" });
+            authors.Add(new Author() { Id = 30, Name = "ccc" });
+            ds3.SaveChanges();
 
-            //books.Add(new Book() { Id = 1, Title = "Aaa", Author = authors.FirstOrDefault() });
-            //books.Add(new Book() { Id = 2, Title = "Bbb", Author = authors.FirstOrDefault() });
-            //books.Add(new Book() { Id = 3, Title = "Ccc", Author = authors.FirstOrDefault() });
-            //books.Add(new Book() { Id = 4, Title = "Ddd", Author = authors.FirstOrDefault() });
-            //ds3.SaveChanges();
+            books.Add(new Book() { Id = 1, Title = "Aaa", Author = authors.FirstOrDefault() });
+            books.Add(new Book() { Id = 2, Title = "Bbb", Author = authors.FirstOrDefault() });
+            books.Add(new Book() { Id = 3, Title = "Ccc", Author = authors.FirstOrDefault() });
+            books.Add(new Book() { Id = 4, Title = "Ddd", Author = authors.FirstOrDefault() });
+            ds3.SaveChanges();
 
-            //ObjectWatcher.Instance.Dump(ds3);
-            //ObjectWatcher.Instance.Dump(ds3.Authors);
-            //ObjectWatcher.Instance.Dump(ds3.Books);
+            ObjectWatcher.Instance.Dump(ds3);
+            ObjectWatcher.Instance.Dump(ds3.Authors);
+            ObjectWatcher.Instance.Dump(ds3.Books);
         }
 
         static void Test2()

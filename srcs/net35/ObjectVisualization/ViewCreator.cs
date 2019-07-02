@@ -198,7 +198,7 @@ namespace ObjectVisualization
 
 
         #region 公開機能
-        
+
 
         public FrameworkElement CreateCallerInfoData(string className, string methodName)
         {
@@ -213,7 +213,7 @@ namespace ObjectVisualization
             var sourceFile = new FileInfo(sourceFilePath);
             var sourceInfo = $"{sourceFile.Directory.Name}/{sourceFile.Name}: {memberName} メソッド: {sourceLineNumber} 行目";
             var block1 = new TextBlock() { Text = sourceInfo, Foreground = Brushes.Gray, HorizontalAlignment = HorizontalAlignment.Left };
-            
+
             return block1;
         }
 
@@ -336,10 +336,11 @@ namespace ObjectVisualization
             {
                 // 空文字の場合何も表示されず分かりにくいため、調整する
                 var s = instance as string;
-                if (s == string.Empty)
+                if (string.IsNullOrEmpty(s))
                 {
                     s = "(空欄)";
                 }
+
 
                 if (s == "__nullFromDataTable__")
                 {
@@ -350,106 +351,17 @@ namespace ObjectVisualization
                 {
                     result = CreatePrimitiveData("DBNull");
                 }
+                else if (IsXml(s))
+                {
+                    result = CreateReplaceMessageLinkLabel("XmlLayout", s, "インラインブラウザで表示できます");
+                }
+                else if (IsCsv(s))
+                {
+                    result = CreateReplaceMessageLinkLabel("CsvLayout", s, "表形式で表示できます");
+                }
                 else
                 {
-                    // 文字列が何らかの形式の場合、その形式で表示できるようにリンクを置いておく
-
-                    // 何度も IsXml メソッドを呼ぶとランタイムエラーでデバッグのステップ実行ができないバグの対応？判定をキャッシュして再利用するように修正
-                    var isXmlLayout = IsXml(s);
-                    var isCsvLayout = IsCsv(s);
-
-                    if (isXmlLayout || isCsvLayout)
-                    {
-                        var linkGrid = new Grid() { HorizontalAlignment = HorizontalAlignment.Left };
-                        linkGrid.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
-                        linkGrid.ColumnDefinitions.Add(new ColumnDefinition());
-
-                        var notice = string.Empty;
-                        if (isXmlLayout)
-                            notice = "インラインブラウザで表示できます";
-                        else if (isCsvLayout)
-                            notice = "表形式で表示できます";
-
-                        var linkBlock = new TextBlock() { HorizontalAlignment = HorizontalAlignment.Left };
-                        var linkCore = new Hyperlink(new Run(notice));
-                        linkBlock.Inlines.Add(linkCore);
-
-                        var linkCheck = new CheckBox() { Content = "1 行目は、ヘッダー列として扱う", VerticalAlignment = VerticalAlignment.Center };
-                        var headerPanel = new StackPanel() { Orientation = Orientation.Horizontal };
-                        headerPanel.Children.Add(linkBlock);
-                        headerPanel.Children.Add(linkCheck);
-
-                        // チェック欄は表形式用。該当しない場合や列名に重複があれば、非表示に変える
-                        if (isXmlLayout)
-                        {
-                            linkCheck.Visibility = Visibility.Hidden;
-                        }
-                        else if (isCsvLayout)
-                        {
-                            // １つ目のデータに重複があるかチェック
-                            var table = ToDataTableForCsv(s);
-                            var row = table.Rows[0];
-
-                            var dic = new Dictionary<string, int>();
-                            foreach (DataColumn column in table.Columns)
-                            {
-                                var name = $"{row[column.ColumnName]}";
-                                if (dic.ContainsKey(name))
-                                    dic[name]++;
-                                else
-                                    dic.Add(name, 1);
-                            }
-
-                            foreach (var item in dic)
-                            {
-                                if (1 < item.Value)
-                                {
-                                    linkCheck.Visibility = Visibility.Hidden;
-                                    break;
-                                }
-                            }
-                        }
-
-                        var linkPanel = new StackPanel();
-                        linkPanel.Children.Add(headerPanel);
-
-                        var strElement = CreatePrimitiveData(s, Brushes.Brown, false);
-                        strElement.HorizontalAlignment = HorizontalAlignment.Left;
-                        linkPanel.Children.Add(strElement);
-
-                        linkGrid.Children.Add(linkPanel);
-                        Grid.SetRow(linkPanel, 0);
-                        Grid.SetColumn(linkPanel, 0);
-
-                        // 最初はリンクを表示させておく。リンクをクリックしたら、リンクを隠して、再取得分のビューを表示させる
-                        linkCore.Click += (s2, e2) =>
-                        {
-                            var memberElement = default(FrameworkElement);
-                            if (isXmlLayout)
-                            {
-                                memberElement = CreateXmlData(s);
-                            }
-                            else if (isCsvLayout)
-                            {
-                                var isChecked = linkCheck.IsChecked.HasValue ? linkCheck.IsChecked.Value : false;
-                                memberElement = CreateCsvData(s, isChecked);
-                            }
-
-                            linkGrid.Children.Add(memberElement);
-                            Grid.SetRow(memberElement, 0);
-                            Grid.SetColumn(memberElement, 0);
-
-                            linkPanel.Visibility = Visibility.Hidden;
-
-                        };
-
-                        result = linkGrid;
-                    }
-                    else
-                    {
-                        result = CreatePrimitiveData(s, Brushes.Brown, false);
-                    }
-
+                    result = CreatePrimitiveData(s, Brushes.Brown, false);
                 }
             }
 
@@ -458,31 +370,44 @@ namespace ObjectVisualization
 
         private FrameworkElement CreateViewDataForDataSetFamilyType(object instance, Type t, int recursiveCallCount)
         {
-            var result = default(FrameworkElement);
+            var ds = default(DataSet);
+            var element = default(FrameworkElement);
 
             if (typeof(DataSet).IsAssignableFrom(t))
             {
-                result = CreateDataSetData(instance, recursiveCallCount);
+                ds = instance as DataSet;
+                element = CreateDataSetData(instance, recursiveCallCount);
             }
             else if (typeof(DataTable).IsAssignableFrom(t))
             {
+                var table = instance as DataTable;
+                ds = ToDataSet(table);
+
                 var title = t.Name;
-                result = CreateDataTableData(instance, recursiveCallCount, title);
+                element = CreateDataTableData(instance, recursiveCallCount, title);
             }
             else if (typeof(DataRow).IsAssignableFrom(t))
             {
+                var row = instance as DataRow;
+                ds = ToDataSet(row);
+
                 var title = t.Name;
-                result = CreateDataRowData(instance, recursiveCallCount, title);
+                element = CreateDataRowData(instance, recursiveCallCount, title);
             }
-            else if (t.Equals(typeof(DataView)))
+            else if (typeof(DataView).IsAssignableFrom(t))
             {
-                result = CreateDataViewData(instance, recursiveCallCount);
+                var view = instance as DataView;
+                ds = ToDataSet(view);
+                element = CreateDataViewData(instance, recursiveCallCount);
             }
-            else if (t.Equals(typeof(DataRowView)))
+            else if (typeof(DataRowView).IsAssignableFrom(t))
             {
-                result = CreateDataRowViewData(instance, recursiveCallCount);
+                var row = instance as DataRowView;
+                ds = ToDataSet(row);
+                element = CreateDataRowViewData(instance, recursiveCallCount);
             }
 
+            var result = CreateShowSubFormLinkLabel(ds, element, recursiveCallCount);
             return result;
         }
 
@@ -554,17 +479,21 @@ namespace ObjectVisualization
 
         private FrameworkElement CreateViewDataForEntityFrameworkFamilyType(object instance, Type t, int recursiveCallCount)
         {
-            var result = default(FrameworkElement);
+            var ds = default(DataSet);
+            var element = default(FrameworkElement);
 
             if (IsDbContextType(t))
             {
-                result = CreateDbContextData(instance, t, recursiveCallCount);
+                ds = ToDataSetForDbContext(instance, t);
+                element = CreateDbContextData(instance, t, recursiveCallCount);
             }
             else if (IsDbSetType(t))
             {
-                result = CreateDbSetData(instance, t, recursiveCallCount);
+                ds = ToDataSetForDbSet(instance);
+                element = CreateDbSetData(instance, t, recursiveCallCount);
             }
 
+            var result = CreateShowSubFormLinkLabel(ds, element, recursiveCallCount);
             return result;
         }
 
@@ -684,8 +613,8 @@ namespace ObjectVisualization
             if (typeof(DataSet).IsAssignableFrom(t)) return true;
             if (typeof(DataTable).IsAssignableFrom(t)) return true;
             if (typeof(DataRow).IsAssignableFrom(t)) return true;
-            if (t.Equals(typeof(DataView))) return true;
-            if (t.Equals(typeof(DataRowView))) return true;
+            if (typeof(DataView).IsAssignableFrom(t)) return true;
+            if (typeof(DataRowView).IsAssignableFrom(t)) return true;
             return false;
         }
 
@@ -954,6 +883,213 @@ namespace ObjectVisualization
 
                 linkBlock.Visibility = Visibility.Hidden;
 
+            };
+
+            return linkGrid;
+        }
+
+        private FrameworkElement CreateReplaceMessageLinkLabel(string kindName, string s, string message)
+        {
+            var isXmlLayout = (kindName == "XmlLayout");
+            var isCsvLayout = (kindName == "CsvLayout");
+
+            var linkGrid = new Grid() { HorizontalAlignment = HorizontalAlignment.Left };
+            linkGrid.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
+            linkGrid.ColumnDefinitions.Add(new ColumnDefinition());
+
+            var linkBlock = new TextBlock() { HorizontalAlignment = HorizontalAlignment.Left };
+            var linkCore = new Hyperlink(new Run(message));
+            linkBlock.Inlines.Add(linkCore);
+
+            var linkCheck = new CheckBox() { Content = "1 行目は、ヘッダー列として扱う", VerticalAlignment = VerticalAlignment.Center };
+            var headerPanel = new StackPanel() { Orientation = Orientation.Horizontal };
+            headerPanel.Children.Add(linkBlock);
+            headerPanel.Children.Add(linkCheck);
+
+            // チェック欄は表形式用。該当しない場合や列名に重複があれば、非表示に変える
+            if (isXmlLayout)
+            {
+                linkCheck.Visibility = Visibility.Hidden;
+            }
+            else if (isCsvLayout)
+            {
+                // １つ目のデータに重複があるかチェック
+                var table = ToDataTableForCsv(s);
+                var row = table.Rows[0];
+
+                var dic = new Dictionary<string, int>();
+                foreach (DataColumn column in table.Columns)
+                {
+                    var name = $"{row[column.ColumnName]}";
+                    if (dic.ContainsKey(name))
+                        dic[name]++;
+                    else
+                        dic.Add(name, 1);
+                }
+
+                foreach (var item in dic)
+                {
+                    if (1 < item.Value)
+                    {
+                        linkCheck.Visibility = Visibility.Hidden;
+                        break;
+                    }
+                }
+            }
+
+            var linkPanel = new StackPanel();
+            linkPanel.Children.Add(headerPanel);
+
+            var strElement = CreatePrimitiveData(s, Brushes.Brown, false);
+            strElement.HorizontalAlignment = HorizontalAlignment.Left;
+            linkPanel.Children.Add(strElement);
+
+            linkGrid.Children.Add(linkPanel);
+            Grid.SetRow(linkPanel, 0);
+            Grid.SetColumn(linkPanel, 0);
+
+            linkCore.Click += (s2, e2) =>
+            {
+                var memberElement = default(FrameworkElement);
+                if (isXmlLayout)
+                {
+                    memberElement = CreateXmlData(s);
+                }
+                else if (isCsvLayout)
+                {
+                    var isChecked = linkCheck.IsChecked.HasValue ? linkCheck.IsChecked.Value : false;
+                    memberElement = CreateCsvData(s, isChecked);
+                }
+
+                linkGrid.Children.Add(memberElement);
+                Grid.SetRow(memberElement, 0);
+                Grid.SetColumn(memberElement, 0);
+
+                linkPanel.Visibility = Visibility.Hidden;
+
+            };
+
+            return linkGrid;
+        }
+
+        private FrameworkElement CreateShowSubFormLinkLabel(DataSet ds, FrameworkElement element, int recursiveCallCount)
+        {
+            // 再帰（入れ子）の場合は表示しない、データが無い場合は表示しない
+            if (0 < recursiveCallCount)
+                return element;
+            else if (ds.Tables.Count == 0)
+                return element;
+            else if (0 < ds.Tables.Count)
+            {
+                var isNoData = true;
+                foreach (DataTable table in ds.Tables)
+                {
+                    if (0 < table.Rows.Count)
+                    {
+                        isNoData = false;
+                        break;
+                    }
+                }
+
+                if (isNoData)
+                    return element;
+            }
+
+
+            var linkGrid = new Grid();
+            linkGrid.ColumnDefinitions.Add(new ColumnDefinition());
+            linkGrid.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
+            linkGrid.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
+
+            var linkBlock = new TextBlock() { HorizontalAlignment = HorizontalAlignment.Left };
+            var linkCore = new Hyperlink(new Run("DataSet ビジュアライザーで見る"));
+            linkBlock.Inlines.Add(linkCore);
+
+            linkGrid.Children.Add(linkBlock);
+            Grid.SetRow(linkBlock, 0);
+            Grid.SetColumn(linkBlock, 0);
+
+            var margin = element.Margin;
+            margin.Top = 0;
+            element.Margin = margin;
+
+            linkGrid.Children.Add(element);
+            Grid.SetRow(element, 1);
+            Grid.SetColumn(element, 0);
+
+            // その時点のデータのままにしたいため、インスタンスをコピーして保持しておく
+            //（LINQ と同じ考え方で、そのまま使おうとすると後続処理で変更が加わった後の、最新データに変わってしまう）
+            var freezeDS = ds.Copy();
+
+            linkCore.Click += (s, e) =>
+            {
+                using (var dlg = new DataSetVisualizerForm())
+                {
+                    dlg.Target = freezeDS;
+                    dlg.ShowDialog();
+                }
+            };
+
+            return linkGrid;
+        }
+
+        private FrameworkElement CreateShowSubWindowLinkLabel(object instance, string xmlData, FrameworkElement xmlGrid, int recursiveCallCount)
+        {
+            // 再帰（入れ子）の場合は表示しない
+            if (0 < recursiveCallCount)
+                return xmlGrid;
+
+            var linkGrid = new Grid();
+            linkGrid.ColumnDefinitions.Add(new ColumnDefinition());
+            linkGrid.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
+            linkGrid.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
+
+            var linkBlock = new TextBlock() { HorizontalAlignment = HorizontalAlignment.Left };
+            var linkCore = new Hyperlink(new Run("XML ビジュアライザーで見る"));
+            linkBlock.Inlines.Add(linkCore);
+
+            linkGrid.Children.Add(linkBlock);
+            Grid.SetRow(linkBlock, 0);
+            Grid.SetColumn(linkBlock, 0);
+
+            var margin = xmlGrid.Margin;
+            margin.Top = 0;
+            xmlGrid.Margin = margin;
+
+            linkGrid.Children.Add(xmlGrid);
+            Grid.SetRow(xmlGrid, 1);
+            Grid.SetColumn(xmlGrid, 0);
+
+            linkCore.Click += (s, e) =>
+            {
+                var structPanel = default(FrameworkElement);
+                if (instance is XmlDocument)
+                {
+                    var element = instance as XmlDocument;
+                    structPanel = CreateXmlDocumentData(element, recursiveCallCount);
+                }
+                else if (instance is XmlElement)
+                {
+                    var element = instance as XmlElement;
+                    structPanel = CreateXmlElementData(element, recursiveCallCount);
+                }
+                else if (instance is XDocument)
+                {
+                    var element = instance as XDocument;
+                    structPanel = CreateXDocumentData(element, recursiveCallCount);
+                }
+                else if (instance is XElement)
+                {
+                    var element = instance as XElement;
+                    structPanel = CreateXElementData(element, recursiveCallCount);
+                }
+
+                var browserPanel = CreateXmlData(xmlData);
+
+                var dlg = new XmlWindow();
+                dlg.VariableElement = structPanel;
+                dlg.BrowserElement = browserPanel;
+                dlg.ShowDialog();
             };
 
             return linkGrid;
@@ -1856,7 +1992,8 @@ namespace ObjectVisualization
                 Grid.SetRow(browserPanel, 0);
                 Grid.SetColumn(browserPanel, 1);
 
-                return grid1;
+                var element = CreateShowSubWindowLinkLabel(doc, xmlData, grid1, recursiveCallCount);
+                return element;
             }
         }
 
@@ -2004,7 +2141,8 @@ namespace ObjectVisualization
                     Grid.SetRow(browserPanel, 0);
                     Grid.SetColumn(browserPanel, 1);
 
-                    return topGrid;
+                    var linkElement = CreateShowSubWindowLinkLabel(element, xmlData, topGrid, recursiveCallCount);
+                    return linkElement;
                 }
             }
 
@@ -2149,7 +2287,8 @@ namespace ObjectVisualization
                 Grid.SetRow(browserPanel, 0);
                 Grid.SetColumn(browserPanel, 1);
 
-                return grid1;
+                var element = CreateShowSubWindowLinkLabel(doc, xmlData, grid1, recursiveCallCount);
+                return element;
             }
         }
 
@@ -2315,7 +2454,8 @@ namespace ObjectVisualization
                     Grid.SetRow(browserPanel, 0);
                     Grid.SetColumn(browserPanel, 1);
 
-                    return topGrid;
+                    var linkElement = CreateShowSubWindowLinkLabel(element, xmlData, topGrid, recursiveCallCount);
+                    return linkElement;
                 }
             }
 
@@ -2773,13 +2913,13 @@ namespace ObjectVisualization
                 }
                 else if (IsDataSetFamilyType(t))
                 {
-                    if (item is DataRowView)
+                    if (typeof(DataRowView).IsAssignableFrom(t))
                     {
                         var view = item as DataRowView;
                         var row = view.Row;
                         ToDataTableForDataRow(row, table);
                     }
-                    else if (item is DataRow || typeof(DataRow).IsAssignableFrom(t))
+                    else if (typeof(DataRow).IsAssignableFrom(t))
                     {
                         var row = item as DataRow;
                         ToDataTableForDataRow(row, table);
@@ -3003,6 +3143,88 @@ namespace ObjectVisualization
             }
 
             return table;
+        }
+
+        private DataSet ToDataSetForDbContext(object instance, Type t)
+        {
+            // DbContext クラスに登録した各DBテーブルメンバー（DbSet<TableClass>）を取得（＝その他管理系のメンバーは除外）
+            // DbSet<> は IEnumerable を継承している
+            var members = t.GetProperties()
+                .Where(x => typeof(IEnumerable).IsAssignableFrom(x.PropertyType))
+                .Select(x => x.GetValue(instance, null) as IEnumerable);
+
+            var result = new DataSet();
+            foreach (var member in members)
+            {
+                var memberType = member.GetType();
+                if (IsDbSetType(memberType))
+                {
+                    var ds = ToDataSetForDbSet(member);
+                    if (0 < ds.Tables.Count)
+                    {
+                        foreach (DataTable table in ds.Tables)
+                            result.Tables.Add(table.Copy());
+                    }
+                }
+
+            }
+
+            return result;
+        }
+
+        private DataSet ToDataSetForDbSet(object instance)
+        {
+            var items = instance as IEnumerable;
+            var itemsCount = 0;
+            foreach (var item in items)
+                itemsCount++;
+
+            var ds = new DataSet();
+            if (0 < itemsCount)
+            {
+                // 余計な列は削除
+                var table = ToDataTable(items);
+                if (table.Columns.Contains("_entityWrapper"))
+                {
+                    var column = table.Columns["_entityWrapper"];
+                    table.Columns.Remove(column);
+                }
+
+                ds.Tables.Add(table);
+            }
+
+            return ds;
+        }
+
+        private DataSet ToDataSet(DataRowView row)
+        {
+            return ToDataSet(row.Row);
+        }
+
+        private DataSet ToDataSet(DataRow row)
+        {
+            var table = new DataTable(row.Table.TableName);
+            var columns = row.Table.Columns;
+
+            foreach (DataColumn column in columns)
+                table.Columns.Add(column.ColumnName, column.DataType);
+
+            table.Rows.Add(row.ItemArray);
+            return ToDataSet(table);
+        }
+
+        private DataSet ToDataSet(DataView view)
+        {
+            return ToDataSet(view.ToTable());
+        }
+
+        private DataSet ToDataSet(DataTable table)
+        {
+            // すでに DataSet に属している場合、table.DataSet を返却してしまうと別のテーブルも見えてしまうため、コピーして参照を切る
+            var ds = new DataSet();
+            ds.Tables.Add(table.Copy());
+
+            return ds;
         }
 
         private List<MemberInfo> GetFieldAndPropertyMembers(Type t)
