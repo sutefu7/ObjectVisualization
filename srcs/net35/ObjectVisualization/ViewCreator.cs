@@ -3162,8 +3162,31 @@ namespace ObjectVisualization
                     var ds = ToDataSetForDbSet(member);
                     if (0 < ds.Tables.Count)
                     {
+                        var tableNames = result.Tables.Cast<DataTable>().Select(x => x.TableName).ToList();
                         foreach (DataTable table in ds.Tables)
+                        {
+                            // テーブル名が重複している場合、登録できないので名称変更する
+                            var tableName = table.TableName;
+                            if (tableNames.Contains(tableName))
+                            {
+                                if (Regex.IsMatch(tableName, @"_(\d+)$"))
+                                {
+                                    var value = tableName.Substring(tableName.LastIndexOf("_") + 1);
+                                    tableName = tableName.Substring(0, tableName.LastIndexOf("_"));
+
+                                    var number = int.Parse(value) + 1;
+                                    tableName = $"{tableName}_{number}";
+                                }
+                                else
+                                {
+                                    tableName = $"{tableName}_1";
+                                }
+
+                                table.TableName = tableName;
+                            }
+
                             result.Tables.Add(table.Copy());
+                        }
                     }
                 }
 
