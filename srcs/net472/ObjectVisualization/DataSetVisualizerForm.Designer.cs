@@ -68,6 +68,7 @@
             this.dgvTable.RowTemplate.Height = 21;
             this.dgvTable.Size = new System.Drawing.Size(774, 335);
             this.dgvTable.TabIndex = 2;
+            this.dgvTable.RowPostPaint += new System.Windows.Forms.DataGridViewRowPostPaintEventHandler(this.dgvTable_RowPostPaint);
             // 
             // btnClose
             // 

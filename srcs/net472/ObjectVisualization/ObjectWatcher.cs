@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -23,6 +24,12 @@ namespace ObjectVisualization
                                 [CallerLineNumber] int sourceLineNumber = 0)
         {
             ObjectWatcher.Instance.Dump(instance, sourceFilePath, memberName, sourceLineNumber);
+            return instance;
+        }
+
+        public static T DumpBaseTypeTree<T>(this T instance)
+        {
+            ObjectWatcher.Instance.DumpBaseTypeTree(instance);
             return instance;
         }
     }
@@ -67,6 +74,17 @@ namespace ObjectVisualization
             _StartEvent.WaitOne();
         }
 
+        private void ShowIfNotShown()
+        {
+            if (_Window is null)
+            {
+                if (CalledVBNETSource())
+                    Show(LanguageTypes.VBNET);
+                else
+                    Show();
+            }
+        }
+
         private void Run()
         {
             _Window = new MainWindow();
@@ -91,8 +109,8 @@ namespace ObjectVisualization
                          [CallerMemberName] string memberName = "",
                          [CallerLineNumber] int sourceLineNumber = 0)
         {
-            if (_Window is null)
-                Show();
+            // Show メソッドを呼ぶ前に呼ばれた場合、強制的に Show メソッドを呼ぶ
+            ShowIfNotShown();
 
             // 別スレッドから読み込もうとすると InvalidOperationException が発生するバグの対応（このオブジェクトは別のスレッドに所有されているため、呼び出しスレッドはこのオブジェクトにアクセスできません。）
             // UI スレッドにいる間に、Freeze 可能な場合、Freeze するように対応
@@ -126,6 +144,79 @@ namespace ObjectVisualization
             });
         }
 
+        public void DumpCallTree()
+        {
+            // Show メソッドを呼ぶ前に呼ばれた場合、強制的に Show メソッドを呼ぶ
+            ShowIfNotShown();
+
+            var t = new StackTrace();
+            var count = t.FrameCount;
+            var items = new List<string>();
+
+            for (var i = 0; i < count; i++)
+            {
+                var f = new StackFrame(i, true);
+                var sourceFilePath = f.GetFileName();
+                if (string.IsNullOrEmpty(sourceFilePath))
+                    continue;
+
+                var method = f.GetMethod();
+                var classType = method.ReflectedType;
+                var className = classType.Name;
+                var methodName = method.Name;
+
+                // このライブラリ内のコールツリーは除外
+                if (classType.Namespace == "ObjectVisualization")
+                    continue;
+
+                var fi = new FileInfo(sourceFilePath);
+                var callInfo = $"{className}.{methodName} メソッド\r\n{fi.Directory.Name}/{fi.Name}: {f.GetFileLineNumber()} 行目:";
+                items.Insert(0, callInfo);
+            }
+
+            _Window.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(() =>
+            {
+                var helper = new ViewCreator(_LanguageTypes);
+                var newData = helper.CreateCallTree(items);
+                newData.Margin = new Thickness(10, 5, 10, 55);
+
+                _Window.AddData(newData);
+                DoEvents();
+            }));
+
+        }
+
+        public void DumpBaseTypeTree(object instance)
+        {
+            if (instance is null)
+                throw new ArgumentNullException("null が渡されました");
+
+            var t = instance.GetType();
+            if (instance is Type)
+                t = instance as Type;
+            else
+                t = instance.GetType();
+
+            DumpBaseTypeTree(t);
+        }
+
+        public void DumpBaseTypeTree(Type t)
+        {
+            // Show メソッドを呼ぶ前に呼ばれた場合、強制的に Show メソッドを呼ぶ
+            ShowIfNotShown();
+
+            _Window.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(() =>
+            {
+                var helper = new ViewCreator(_LanguageTypes);
+                var newData = helper.CreateBaseTypeTree(t);
+                newData.Margin = new Thickness(10, 5, 10, 55);
+
+                _Window.AddData(newData);
+                DoEvents();
+            }));
+
+        }
+
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             _Window.Loaded -= Window_Loaded;
@@ -142,6 +233,17 @@ namespace ObjectVisualization
             });
             Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Background, callback, frame);
             Dispatcher.PushFrame(frame);
+        }
+
+        private bool CalledVBNETSource()
+        {
+            var asms = AppDomain.CurrentDomain.GetAssemblies();
+            var classNames = asms
+                .SelectMany(x => x.GetTypes())
+                .Where(y => y.IsClass)
+                .Select(z => string.IsNullOrEmpty(z.FullName) ? z.Name : z.FullName);
+
+            return classNames.Any(x => x.EndsWith(".My.MySettings"));
         }
     }
 }

@@ -32,19 +32,21 @@ namespace ConsoleApp1
             ObjectWatcher.Instance.Show();
             //ObjectWatcher.Instance.Show(LanguageTypes.VBNET);
 
-            Test1();
-            Test2();
-            Test3();
-            Test4();
-            Test5();
-            Test6();
-            Test7();
-            Test8();
-            Test9();
-            Test10();
-            Test11();
-            Test12();
-            Test13();
+            //Test1();
+            //Test2();
+            //Test3();
+            //Test4();
+            //Test5();
+            //Test6();
+            //Test7();
+            //Test8();
+            //Test9();
+            //Test10();
+            //Test11();
+            //Test12();
+            //Test13();
+            Test14();
+            Test15();
 
 
 
@@ -62,6 +64,23 @@ namespace ConsoleApp1
             where T2 : class, new()
         {
 
+        }
+
+        static void Test15()
+        {
+            var s = "hello";
+            s.DumpBaseTypeTree();
+
+            var t = s.GetType();
+            t.DumpBaseTypeTree();
+
+            ObjectWatcher.Instance.DumpBaseTypeTree(s);
+            ObjectWatcher.Instance.DumpBaseTypeTree(t);
+        }
+
+        static void Test14()
+        {
+            ObjectWatcher.Instance.DumpCallTree();
         }
 
         static void Test13()

@@ -58,18 +58,29 @@ LINQPad 自体の機能は利用していないため、LINQPad が未インス�
 
     Imports ObjectVisualization
 
-VB.NET では、拡張メソッドの xxx.Dump() はうまく動作できないので、シングルトン版で使います。
+しておいて、
 
-Show メソッドの引数で、出力形式を VB.NET に設定します。
+    xxx.Dump()
+
+または、
 
     ObjectWatcher.Instance.Show(TargetLanguageTypes.VBNET)
     ObjectWatcher.Instance.Dump(xxx)
+
+Show メソッドの引数で、出力形式を VB.NET に設定します。
 
 ※基本的には、業務プログラム終了に任せて、Close メソッドを呼び出さなくてもいいです。
 
     ObjectWatcher.Instance.Close()
 
 調査コードを書いたら、後はデバッグ実行します。ブレークポイントを設定しないで一気に実行してもいいですし、１行ずつステップ実行してもいいです。
+
+拡張メソッドの Dump() は以下の型では使えません。この場合は ObjectWatcher.Instance.Dump(xxx) の方を使ってください。
+
+| 項目 | 値                                                               |
+| ----- |:---------------------------------------------------- |
+| C# | dynamic 型                                                       |
+| VB.NET | Object 型 |
 
 
 

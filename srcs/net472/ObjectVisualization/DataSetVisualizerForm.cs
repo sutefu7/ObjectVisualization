@@ -42,5 +42,25 @@ namespace ObjectVisualization
         {
             this.Close();
         }
+
+        private void dgvTable_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
+        {
+            var ctrl = sender as DataGridView;
+            if (ctrl.RowHeadersVisible)
+            {
+                var columnText = (e.RowIndex + 1).ToString();
+                var idxRect = new Rectangle(e.RowBounds.Left, e.RowBounds.Top, ctrl.RowHeadersWidth, e.RowBounds.Height);
+                var rectHeight = e.InheritedRowStyle.Padding.Top;
+                var rectLeft = e.InheritedRowStyle.Padding.Left;
+
+                idxRect.Inflate(rectLeft, rectHeight);
+                TextRenderer.DrawText(e.Graphics,
+                                      columnText,
+                                      e.InheritedRowStyle.Font,
+                                      idxRect,
+                                      e.InheritedRowStyle.ForeColor,
+                                      TextFormatFlags.Right | TextFormatFlags.VerticalCenter);
+            }
+        }
     }
 }

@@ -895,6 +895,8 @@ namespace ObjectVisualization
             Grid.SetRow(xmlGrid, 1);
             Grid.SetColumn(xmlGrid, 0);
 
+            // InvalidOperationException が発生するバグの対応（指定された要素は、既に別の要素の論理子です。まず接続を切断してください）
+            // インスタンスをを使いまわさず、クリックするたびに一意のインスタンスを生成して使うように修正
             linkCore.Click += (s, e) =>
             {
                 var structPanel = default(FrameworkElement);
@@ -2394,6 +2396,95 @@ namespace ObjectVisualization
 
                     memberPanel.Children.Add(nodeElement);
                 }
+            }
+
+            return stackPanel1;
+        }
+
+
+        #endregion
+
+
+        #region コールツリー作成
+
+
+        public FrameworkElement CreateCallTree(List<string> items)
+        {
+            // 外枠
+            var stackPanel1 = new StackPanel() { Margin = new Thickness(10) };
+
+            for (var i = 0; i < items.Count; i++)
+            {
+                var grid1 = new Grid() { HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(10 * i, 10, 10, 10) };
+                grid1.RowDefinitions.Add(new RowDefinition());
+                grid1.ColumnDefinitions.Add(new ColumnDefinition());
+                grid1.ColumnDefinitions.Add(new ColumnDefinition());
+                stackPanel1.Children.Add(grid1);
+
+                var arrowBlock = new TextBlock() { Text = "→", Margin = new Thickness(10, 10, 10, 10) };
+                grid1.Children.Add(arrowBlock);
+                Grid.SetRow(arrowBlock, 0);
+                Grid.SetColumn(arrowBlock, 0);
+
+                var rec1 = new Rectangle() { Stroke = Brushes.Blue, Fill = Brushes.AliceBlue, RadiusX = 5.0, RadiusY = 5.0 };
+                grid1.Children.Add(rec1);
+                Grid.SetRow(rec1, 0);
+                Grid.SetColumn(rec1, 1);
+
+                var item = items[i];
+                var callBlock = new TextBlock() { Text = item, Margin = new Thickness(10, 10, 10, 10) };
+                grid1.Children.Add(callBlock);
+                Grid.SetRow(callBlock, 0);
+                Grid.SetColumn(callBlock, 1);
+            }
+
+            return stackPanel1;
+        }
+
+
+        #endregion
+
+
+        #region 継承ツリー作成
+
+
+        public FrameworkElement CreateBaseTypeTree(Type t)
+        {
+            var items = new List<string>();
+            items.Add(GetVariableTypeName(t));
+
+            while (!(t.BaseType is null))
+            {
+                t = t.BaseType;
+                items.Add(GetVariableTypeName(t));
+            }
+
+            // 外枠
+            var stackPanel1 = new StackPanel() { Margin = new Thickness(10) };
+
+            for (var i = 0; i < items.Count; i++)
+            {
+                var grid1 = new Grid() { HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(10 * i, 10, 10, 10) };
+                grid1.RowDefinitions.Add(new RowDefinition());
+                grid1.ColumnDefinitions.Add(new ColumnDefinition());
+                grid1.ColumnDefinitions.Add(new ColumnDefinition());
+                stackPanel1.Children.Add(grid1);
+
+                var arrowBlock = new TextBlock() { Text = "→", Margin = new Thickness(10, 10, 10, 10) };
+                grid1.Children.Add(arrowBlock);
+                Grid.SetRow(arrowBlock, 0);
+                Grid.SetColumn(arrowBlock, 0);
+
+                var rec1 = new Rectangle() { Stroke = Brushes.Blue, Fill = Brushes.AliceBlue, RadiusX = 5.0, RadiusY = 5.0 };
+                grid1.Children.Add(rec1);
+                Grid.SetRow(rec1, 0);
+                Grid.SetColumn(rec1, 1);
+
+                var item = items[i];
+                var callBlock = new TextBlock() { Text = item, Margin = new Thickness(10, 10, 10, 10) };
+                grid1.Children.Add(callBlock);
+                Grid.SetRow(callBlock, 0);
+                Grid.SetColumn(callBlock, 1);
             }
 
             return stackPanel1;
