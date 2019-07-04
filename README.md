@@ -12,11 +12,14 @@ LINQPad 自体の機能は利用していないため、LINQPad が未インス�
 
 ## サンプルイメージ
 
+VB.NET + DataSet / XmlDocument
+
 ![サンプルその１](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image01.png)
 
 
 ![サンプルその２](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image02.png)
 
+C# + Entity Framework / 他
 
 ![サンプルその３](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image03.png)
 
