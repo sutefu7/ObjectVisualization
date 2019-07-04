@@ -27,6 +27,11 @@ LINQPad 自体の機能は利用していないため、LINQPad が未インス�
 ![サンプルその５](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image05.png)
 
 
+コールツリーやクラスの継承ツリーも表示できます。
+
+![サンプルその６](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image06.png)
+
+
 
 
 ## 使い方

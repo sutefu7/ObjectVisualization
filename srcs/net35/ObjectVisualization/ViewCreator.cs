@@ -2636,15 +2636,61 @@ namespace ObjectVisualization
         #region 継承ツリー作成
 
 
+        // 継承元クラスと継承元インターフェースを階層的に表示する
         public FrameworkElement CreateBaseTypeTree(Type t)
         {
+            var className = GetVariableTypeName(t);
             var items = new List<string>();
-            items.Add(GetVariableTypeName(t));
+            items.Add(className);
+            
+            var dic = new Dictionary<string, List<string>>();
+            var interfaces = t.GetInterfaces();
+            if (!(interfaces is null) && 0 < interfaces.Length)
+            {
+                var values = new List<string>();
+                foreach (var interfaceType in interfaces)
+                    values.Add(GetVariableTypeName(interfaceType));
+                
+                dic[className] = values;
+            }
 
             while (!(t.BaseType is null))
             {
                 t = t.BaseType;
-                items.Add(GetVariableTypeName(t));
+                className = GetVariableTypeName(t);
+                items.Add(className);
+
+                interfaces = t.GetInterfaces();
+                if (!(interfaces is null) && 0 < interfaces.Length)
+                {
+                    var values = new List<string>();
+                    foreach (var interfaceType in interfaces)
+                        values.Add(GetVariableTypeName(interfaceType));
+
+                    dic[className] = values;
+                }
+            }
+
+            // 継承元インターフェースは現在のクラスに集約されるみたいなので、
+            // 祖先クラスからさかのぼって、かぶっていたら子クラスのインターフェースは除去する用に調整
+            var reserves = new List<string>();
+            for (var i = items.Count - 1; i >= 0; i--)
+            {
+                var item = items[i];
+                if (!dic.ContainsKey(item))
+                    continue;
+
+                var values = dic[item];
+                var newValues = new List<string>();
+                foreach (var value in values)
+                {
+                    if (!reserves.Contains(value))
+                    {
+                        reserves.Add(value);
+                        newValues.Add(value);
+                    }
+                }
+                dic[item] = newValues;
             }
 
             // 外枠
@@ -2663,7 +2709,7 @@ namespace ObjectVisualization
                 Grid.SetRow(arrowBlock, 0);
                 Grid.SetColumn(arrowBlock, 0);
 
-                var rec1 = new Rectangle() { Stroke = Brushes.Blue, Fill = Brushes.AliceBlue, RadiusX = 5.0, RadiusY = 5.0 };
+                var rec1 = new Rectangle() { Stroke = Brushes.LightSkyBlue, Fill = Brushes.AliceBlue, RadiusX = 5.0, RadiusY = 5.0 };
                 grid1.Children.Add(rec1);
                 Grid.SetRow(rec1, 0);
                 Grid.SetColumn(rec1, 1);
@@ -2673,6 +2719,28 @@ namespace ObjectVisualization
                 grid1.Children.Add(callBlock);
                 Grid.SetRow(callBlock, 0);
                 Grid.SetColumn(callBlock, 1);
+
+                // インターフェースがあれば表示する
+                if (dic.ContainsKey(item))
+                {
+                    var values = dic[item];
+                    for (var k = 0; k < values.Count; k++)
+                    {
+                        var columnIndex = k + 2;
+                        grid1.ColumnDefinitions.Add(new ColumnDefinition());
+
+                        var rec2 = new Rectangle() { Stroke = Brushes.LightPink, Fill = Brushes.LavenderBlush, RadiusX = 5.0, RadiusY = 5.0, Margin = new Thickness(5, 0, 0, 0) };
+                        grid1.Children.Add(rec2);
+                        Grid.SetRow(rec2, 0);
+                        Grid.SetColumn(rec2, columnIndex);
+                        
+                        var callBlock2 = new TextBlock() { Text = values[k], Margin = new Thickness(15, 10, 10, 10) };
+                        grid1.Children.Add(callBlock2);
+                        Grid.SetRow(callBlock2, 0);
+                        Grid.SetColumn(callBlock2, columnIndex);
+
+                    }
+                }
             }
 
             return stackPanel1;

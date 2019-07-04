@@ -28,22 +28,22 @@ namespace ConsoleApp1
     {
         static void Main(string[] args)
         {
-            //ObjectWatcher.Instance.Show();
-            ObjectWatcher.Instance.Show(LanguageTypes.VBNET);
+            ObjectWatcher.Instance.Show();
+            //ObjectWatcher.Instance.Show(LanguageTypes.VBNET);
 
-            Test1();
-            Test2();
-            Test3();
-            Test4();
-            Test5();
-            Test6();
-            Test7();
-            Test8();
-            Test9();
-            Test10();
-            Test11();
-            Test12();
-            Test13();
+            //Test1();
+            //Test2();
+            //Test3();
+            //Test4();
+            //Test5();
+            //Test6();
+            //Test7();
+            //Test8();
+            //Test9();
+            //Test10();
+            //Test11();
+            //Test12();
+            //Test13();
             Test14();
             Test15();
 
@@ -70,11 +70,14 @@ namespace ConsoleApp1
             var s = "hello";
             s.DumpBaseTypeTree();
 
-            var t = s.GetType();
-            t.DumpBaseTypeTree();
+            //var t = s.GetType();
+            //t.DumpBaseTypeTree();
 
-            ObjectWatcher.Instance.DumpBaseTypeTree(s);
-            ObjectWatcher.Instance.DumpBaseTypeTree(t);
+            //ObjectWatcher.Instance.DumpBaseTypeTree(s);
+            //ObjectWatcher.Instance.DumpBaseTypeTree(t);
+
+            var items1 = new CustomList();
+            items1.DumpBaseTypeTree();
         }
 
         static void Test14()
