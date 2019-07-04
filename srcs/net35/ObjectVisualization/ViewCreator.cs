@@ -748,43 +748,12 @@ namespace ObjectVisualization
         private StackPanel CreateMemberData(object instance, Type t, int recursiveCallCount)
         {
             var typeName = GetVariableTypeName(t);
-            var items = GetFieldAndPropertyMembers(t);
-            var newItems = new List<Tuple<string, object>>();
+            var items = GetFieldAndPropertyMembers(instance, t);
 
-            for (var i = 0; i < items.Count; i++)
-            {
-                var memberName = string.Empty;
-                var memberInstance = default(object);
-
-                if (items[i] is FieldInfo)
-                {
-                    var info = items[i] as FieldInfo;
-                    memberName = info.Name;
-                    memberInstance = info.GetValue(instance);
-                }
-                else if (items[i] is PropertyInfo)
-                {
-                    var info = items[i] as PropertyInfo;
-                    memberName = info.Name;
-
-                    // Getter が無い場合に備える
-                    try
-                    {
-                        memberInstance = info.GetValue(instance, null);
-                    }
-                    catch (Exception ex)
-                    {
-                        memberInstance = ex;
-                    }
-                }
-
-                newItems.Add(Tuple.Create(memberName, memberInstance));
-            }
-
-            return CreateMemberData(typeName, newItems, recursiveCallCount);
+            return CreateMemberData(typeName, items, recursiveCallCount);
         }
 
-        private StackPanel CreateMemberData(string typeName, List<Tuple<string, object>> items, int recursiveCallCount)
+        private StackPanel CreateMemberData(string typeName, List<Tuple<string, Type, object>> items, int recursiveCallCount)
         {
             // 外枠
             var stackPanel1 = new StackPanel() { Orientation = Orientation.Horizontal, Margin = new Thickness(10) };
@@ -817,7 +786,8 @@ namespace ObjectVisualization
             for (var i = 0; i < items.Count; i++)
             {
                 var memberName = items[i].Item1;
-                var memberInstance = items[i].Item2;
+                var memberType = items[i].Item2;
+                var memberInstance = items[i].Item3;
 
                 grid1.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
                 rowIndex++;
@@ -839,6 +809,9 @@ namespace ObjectVisualization
 
                 var nameBlock = new TextBlock() { Text = memberName, FontWeight = FontWeights.UltraBold };
                 namePanel.Children.Add(nameBlock);
+
+                var memberTypeName = GetVariableTypeName(memberType);
+                SetToolTip(nameBlock, memberTypeName, memberName);
 
 
                 // メンバー値
@@ -1394,11 +1367,33 @@ namespace ObjectVisualization
                     DockPanel.SetDock(headerLine2, Dock.Right);
                 }
 
+                var headerBlock = new TextBlock() { FontWeight = FontWeights.UltraBold };
                 var memberName = table.Columns[i].ColumnName;
+                var memberTypeName = table.Columns[i].Caption;
                 if (memberName == FirstColumnName)
-                    memberName = "（無所属）";
+                {
+                    headerBlock.Text = "（無所属）";
+                }
+                else
+                {
+                    headerBlock.Text = memberName;
 
-                headerPanel.Children.Add(new TextBlock() { Text = memberName, FontWeight = FontWeights.UltraBold });
+                    // 渡されたのがコレクション系の場合、型は全て object 型にしている。その代わり Caption に本来の型を登録しているため、抽出して使う
+                    // 渡されたのが DataSet 系の場合、型をそのまま使う
+                    if (memberTypeName.StartsWith("__MemberType__"))
+                    {
+                        memberTypeName = memberTypeName.Substring(memberTypeName.IndexOf("__MemberType__") + "__MemberType__".Length);
+                        SetToolTip(headerBlock, memberTypeName, memberName);
+                    }
+                    else
+                    {
+                        var memberType = table.Columns[i].DataType;
+                        memberTypeName = GetVariableTypeName(memberType);
+                        SetToolTip(headerBlock, memberTypeName, memberName);
+                    }
+                }
+
+                headerPanel.Children.Add(headerBlock);
             }
 
             // コレクションデータ
@@ -1441,6 +1436,34 @@ namespace ObjectVisualization
                     memberPanel.Children.Add(memberElement);
                 }
             }
+        }
+
+        private void SetToolTip(FrameworkElement targetElement, string typeName, string memberName)
+        {
+            var headerTip = new ToolTip();
+            var tipElement = default(StackPanel);
+
+            if (_LanguageTypes == LanguageTypes.CSharp)
+            {
+                // Xxx xxx
+                // typeName memberName
+                tipElement = new StackPanel() { Orientation = Orientation.Horizontal };
+                tipElement.Children.Add(new TextBlock() { Text = typeName, Foreground = Brushes.Blue, Margin = new Thickness(0) });
+                tipElement.Children.Add(new TextBlock() { Text = $" {memberName}", Foreground = Brushes.Black, Margin = new Thickness(0) });
+
+            }
+            else if (_LanguageTypes == LanguageTypes.VBNET)
+            {
+                // xxx As Xxx
+                // memberName As typeName
+                tipElement = new StackPanel() { Orientation = Orientation.Horizontal };
+                tipElement.Children.Add(new TextBlock() { Text = $"{memberName} ", Foreground = Brushes.Black, Margin = new Thickness(0) });
+                tipElement.Children.Add(new TextBlock() { Text = "As ", Foreground = Brushes.Blue, Margin = new Thickness(0) });
+                tipElement.Children.Add(new TextBlock() { Text = typeName, Foreground = Brushes.Blue, Margin = new Thickness(0) });
+            }
+
+            headerTip.Content = tipElement;
+            ToolTipService.SetToolTip(targetElement, headerTip);
         }
 
 
@@ -1806,12 +1829,12 @@ namespace ObjectVisualization
         {
             var row = instance as DataRow;
             var columns = row.Table.Columns;
-            var items = new List<Tuple<string, object>>();
+            var items = new List<Tuple<string, Type, object>>();
 
             foreach (DataColumn column in columns)
             {
                 var columnName = column.ColumnName;
-                items.Add(Tuple.Create(columnName, row[columnName]));
+                items.Add(Tuple.Create(columnName, column.DataType, row[columnName]));
             }
 
             return CreateMemberData(title, items, recursiveCallCount);
@@ -2080,9 +2103,9 @@ namespace ObjectVisualization
             var attributeName = attr.Name;
             object attributeValue = attr.Value;
 
-            var items = new List<Tuple<string, object>>
+            var items = new List<Tuple<string, Type, object>>
             {
-                Tuple.Create(attributeName, attributeValue),
+                Tuple.Create(attributeName, typeof(string), attributeValue),
             };
 
             return CreateMemberData(typeName, items, 0);
@@ -2096,11 +2119,11 @@ namespace ObjectVisualization
             object encode = string.IsNullOrEmpty(dec.Encoding) ? " " : dec.Encoding;
             object standalone = string.IsNullOrEmpty(dec.Standalone) ? " " : dec.Standalone;
 
-            var items = new List<Tuple<string, object>>
+            var items = new List<Tuple<string, Type, object>>
             {
-                Tuple.Create("Version", version),
-                Tuple.Create("Encoding", encode),
-                Tuple.Create("Standalone", standalone),
+                Tuple.Create("Version", version.GetType(), version),
+                Tuple.Create("Encoding",encode.GetType(), encode),
+                Tuple.Create("Standalone",standalone.GetType(), standalone),
             };
 
             return CreateMemberData(typeName, items, 0);
@@ -2393,9 +2416,9 @@ namespace ObjectVisualization
                 attributeName = attributeName.Replace("{http://www.w3.org/2000/xmlns/}", "xmlns:");
             }
 
-            var items = new List<Tuple<string, object>>()
+            var items = new List<Tuple<string, Type, object>>()
             {
-                Tuple.Create(attributeName, attributeValue)
+                Tuple.Create(attributeName,typeof(string), attributeValue)
             };
 
             return CreateMemberData(typeName, items, 0);
@@ -2409,11 +2432,11 @@ namespace ObjectVisualization
             object encode = string.IsNullOrEmpty(dec.Encoding) ? " " : dec.Encoding;
             object standalone = string.IsNullOrEmpty(dec.Standalone) ? " " : dec.Standalone;
 
-            var items = new List<Tuple<string, object>>
+            var items = new List<Tuple<string, Type, object>>
             {
-                Tuple.Create("Version", version),
-                Tuple.Create("Encoding", encode),
-                Tuple.Create("Standalone", standalone),
+                Tuple.Create("Version",version.GetType(), version),
+                Tuple.Create("Encoding",encode.GetType(), encode),
+                Tuple.Create("Standalone",standalone.GetType(), standalone),
             };
 
             return CreateMemberData(typeName, items, 0);
@@ -3072,8 +3095,17 @@ namespace ObjectVisualization
             for (var i = 0; i < columns.Count; i++)
             {
                 var memberName = columns[i].ColumnName;
+                var memberType = columns[i].DataType;
+
                 if (!table.Columns.Contains(memberName))
-                    table.Columns.Add(memberName, typeof(object));
+                {
+                    var column = new DataColumn();
+                    column.ColumnName = memberName;
+                    column.DataType = typeof(object);
+                    column.Caption = $"__MemberType__{GetVariableTypeName(memberType)}";
+
+                    table.Columns.Add(column);
+                }
             }
 
             // １行分（１つ分のデータ）を登録（メンバー名に該当する場合はその値、それ以外は DBNull）
@@ -3090,44 +3122,30 @@ namespace ObjectVisualization
         {
             // クラス、構造体、匿名型
             // メンバー名がかぶった場合まとめて扱う。型が違っていても無視
-            var memberItems = GetFieldAndPropertyMembers(t);
+            var items = GetFieldAndPropertyMembers(item, t);
 
             // メンバー数分、列作成
-            for (var i = 0; i < memberItems.Count; i++)
+            for (var i = 0; i < items.Count; i++)
             {
-                var memberName = memberItems[i].Name;
+                var memberName = items[i].Item1;
+                var memberType = items[i].Item2;
                 if (!table.Columns.Contains(memberName))
-                    table.Columns.Add(memberName, typeof(object));
+                {
+                    var column = new DataColumn();
+                    column.ColumnName = memberName;
+                    column.DataType = typeof(object);
+                    column.Caption = $"__MemberType__{GetVariableTypeName(memberType)}";
+
+                    table.Columns.Add(column);
+                }
             }
 
             // １行分（１つ分のデータ）を登録
             var row = table.NewRow();
-            for (var i = 0; i < memberItems.Count; i++)
+            for (var i = 0; i < items.Count; i++)
             {
-                var memberName = string.Empty;
-                var memberInstance = default(object);
-
-                if (memberItems[i] is FieldInfo)
-                {
-                    var info = memberItems[i] as FieldInfo;
-                    memberName = info.Name;
-                    memberInstance = info.GetValue(item);
-                }
-                else if (memberItems[i] is PropertyInfo)
-                {
-                    var info = memberItems[i] as PropertyInfo;
-                    memberName = info.Name;
-
-                    // Getter が無い場合に備える
-                    try
-                    {
-                        memberInstance = info.GetValue(item, null);
-                    }
-                    catch (Exception ex)
-                    {
-                        memberInstance = ex;
-                    }
-                }
+                var memberName = items[i].Item1;
+                var memberInstance = items[i].Item3;
 
                 row[memberName] = memberInstance;
             }
@@ -3338,18 +3356,39 @@ namespace ObjectVisualization
             return ds;
         }
 
-        private List<MemberInfo> GetFieldAndPropertyMembers(Type t)
+        private List<Tuple<string, Type, object>> GetFieldAndPropertyMembers(object instance, Type t)
         {
             var fieldTypes = t.GetFields();
             var propertyTypes = t.GetProperties();
-            var items = new List<MemberInfo>();
+            var items = new List<Tuple<string, Type, object>>();
 
             // フィールドとプロパティメンバーをまとめて扱う。同名でかぶってしまうことは無いはず？
-            foreach (var fieldType in fieldTypes)
-                items.Add(fieldType as MemberInfo);
+            foreach (var info in fieldTypes)
+            {
+                var memberName = info.Name;
+                var memberType = info.FieldType;
+                var memberInstance = info.GetValue(instance);
+                items.Add(Tuple.Create(memberName, memberType, memberInstance));
+            }
 
-            foreach (var propertyType in propertyTypes)
-                items.Add(propertyType as MemberInfo);
+            foreach (var info in propertyTypes)
+            {
+                var memberName = info.Name;
+                var memberType = info.PropertyType;
+                var memberInstance = default(object);
+
+                // Getter が無い場合に備える
+                try
+                {
+                    memberInstance = info.GetValue(instance, null);
+                }
+                catch (Exception ex)
+                {
+                    memberInstance = ex;
+                }
+
+                items.Add(Tuple.Create(memberName, memberType, memberInstance));
+            }
 
             return items;
         }

@@ -48,7 +48,7 @@ namespace ObjectVisualization
             var ctrl = sender as DataGridView;
             if (ctrl.RowHeadersVisible)
             {
-                var columnText = (e.RowIndex + 1).ToString();
+                var columnText = (e.RowIndex + 1).ToString() + " ";
                 var idxRect = new Rectangle(e.RowBounds.Left, e.RowBounds.Top, ctrl.RowHeadersWidth, e.RowBounds.Height);
                 var rectHeight = e.InheritedRowStyle.Padding.Top;
                 var rectLeft = e.InheritedRowStyle.Padding.Left;
