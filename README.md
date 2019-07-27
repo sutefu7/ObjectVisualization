@@ -3,355 +3,105 @@
 
 ## これは何ですか？
 
-LINQPad の機能（変数の内容をグラフィカルに出力表示する機能）を、Visual Studio でデバッグ中に使いたいと思い、作成したライブラリです。
-LINQPad 自体の機能は利用していないため、LINQPad が未インストールでも動作します。
+デバッグ中の変数を視覚化して見るためのライブラリです。Visual Studio のデバッガビジュアライザーとして作成していますので、ソースコードへの変更無しに、いつも通りのデバッグ作業として使うことができます。
 
-業務コードや OSS 開発など、すでにあるソースを理解したいとか、変数の変化を時系列に追跡して、バグ調査したいなどの場面で利用できます。
+使い方は簡単で、dll をマイドキュメントにある Visual Studio の指定フォルダに配置するだけです。消し方も簡単で、配置した dll を削除するだけです。
 
+## デバッガビジュアライザーって何？
 
+例えば、Visual Studio 2017 だと、テキスト、XML、HTML、DataSet 向けのビジュアライザーなどが標準搭載されています。DataSet 向けだとこういうのです。
 
-## サンプルイメージ
+image01.png
 
-VB.NET + DataSet / XmlDocument
+例えば DataTable はウォッチウィンドウでツリー展開して見るよりも、表形式で見たほうが分かりやすいです。こんな便利なビジュアライザーをもっと多くの型で使えたらいいのに。という困り事から作成しようと思いました。
 
-![サンプルその１](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image01.png)
+## 作成したビジュアライザー
 
+### コレクション系
 
-![サンプルその２](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image02.png)
+DataRow, DataRowView, List<T> などのコレクション系の型に対して、表形式で見られるビジュアライザーを用意しました。
 
-C# + Entity Framework / 他
+image02.png
 
-![サンプルその３](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image03.png)
+ただし、ビジュアライザー側の仕様的に、インターフェース型は未対応っぽくて、クラス別になるため、現状未対応のコレクション系もあるかもしれませんが、随時対応していきたいと考えています。
 
+また、表形式（２次元配列）で表示するのですが、特に Entity Framework の DbSet<T> などでは int や string などのプリミティブ型以外に、リレーションとしてデータクラスを持っていると思います。この場合、そのインスタンスの ToString() した名前空間が表示されるという制限になります。
 
-![サンプルその４](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image04.png)
+image03.png
 
+このサンプル画像で出ていますが、Entity Framework は解決できないバグがあるため未対応です。よって、DbContext は未対応、DbSet<T> は ToList() に変換したものでビジュアライザーで見ていただく使い方になります。この制限は IEnumerable<T> 系も同様です。
 
-![サンプルその５](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image05.png)
+### XML 操作系
 
+XmlDocument, XmlElement, XDocument, XElement は、構造とブラウザ表示の２部構成のビジュアライザーを用意しました。
 
-コールツリーやクラスの継承ツリーも表示できます。
+image04.png
 
-![サンプルその６](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image06.png)
+### その他全部の型
 
+これまで紹介してきた各ビジュアライザーとは別に、全ての型に対応するビジュアライザーを用意しました。もちろんインターフェース型にも対応しています。
 
+image05.png
 
+image06.png
 
-## 使い方
+ただし、object 型に対応させることができないため、代わりに WeakReference 型を指定しています。使うときはウォッチウィンドウなどから `new WeakReference(xxx)` として、WeakReference 型に変換することでビジュアライザーに渡すことができます。
 
-### その１、静的参照（dll 参照追加）
+前述の XML 系のビジュアライザーもそうですが、変数の表示形式を LINQPad に似せています。ツリー形式の文字列として見るよりも、視覚化して見たほうがはるかに分かりやすいからです。
 
-プロジェクトファイル（xxx.vbproj, xxx.csproj）に変更点が入っても大丈夫だよ！後で消すよ！ができる場合は、参照の追加から本ライブラリを追加します。
-ただし、調査用のコードは書く必要があり、使い終わったらそれを削除するのを忘れないようにしてください。
+ただし、制限としてコレクション系データは先頭 10 件のみ表示しています。理由は、実装上の仕組みの話で、ビジュアライザーに渡す際、データ量が多くなりすぎるとタイムアウトで渡しきれなくなるためです。
 
+#### 時系列の履歴管理
 
-#### C#
+現在表示中のデータを、次回表示時に再度表示させることができます。関連する変数同士を見たいときに使います。
 
-    using ObjectVisualization;
+image07.png
 
-しておいて、
+image08.png
 
-    xxx.Dump();
+この機能を使うと、dll があるフォルダ内に作業用フォルダが作成され、この中にテキストファイルとしてデータを保存したり削除したりします。
 
-または、
+- マイドキュメント
+	- Visual Studio 201X
+		- Visualizers
+			- ObjectVisualization.dll
+			- ObjectVisualization_Work
+				- ObjectInfo
+					- yyyy_MM_dd_HH_mm_ss_fff.txt　←★これ
 
-    ObjectWatcher.Instance.Show();
-    ObjectWatcher.Instance.Dump(xxx);
 
-※基本的には、業務プログラム終了に任せて、Close メソッドを呼び出さなくてもいいです。
+#### 差分チェック
 
-    ObjectWatcher.Instance.Close();
+前述の `時系列の履歴管理` を応用して、同じ型でかつ同じデータ数の場合だけなのですが、差分チェック機能を搭載しています。想定場面としては、同じ変数でも、ある行を通る前の変数、通った後の変数の見比べです。
 
-#### VB.NET
+image09.png
 
-    Imports ObjectVisualization
+#### 継承元クラスツリー
 
-しておいて、
+`new WeakReference(xxx.GetType())` みたいに Type 型を渡すことで、継承関係を見ることができます。
 
-    xxx.Dump()
+image10.png
 
-または、
+#### コールツリー
 
-    ObjectWatcher.Instance.Show(TargetLanguageTypes.VBNET)
-    ObjectWatcher.Instance.Dump(xxx)
+ステップ実行中の行位置をベースとして、コールツリーを見ることができます。
 
-Show メソッドの引数で、出力形式を VB.NET に設定します。
+やり方は、ウォッチウィンドウなどで `new WeakReference(new System.Diagnostics.StackTrace(true).GetFrames())` と入力します。
 
-※基本的には、業務プログラム終了に任せて、Close メソッドを呼び出さなくてもいいです。
+image11.png
 
-    ObjectWatcher.Instance.Close()
+## 旧仕様
 
-調査コードを書いたら、後はデバッグ実行します。ブレークポイントを設定しないで一気に実行してもいいですし、１行ずつステップ実行してもいいです。
+以前提供していた、ソースコード上からデータ表示する専用命令（`ObjectWatcher.Instance.Dump()`, `xxx.Dump()`）は削除しました。
 
-拡張メソッドの Dump() は以下の型では使えません。この場合は ObjectWatcher.Instance.Dump(xxx) の方を使ってください。
 
-| 項目 | 値                                                               |
-| ----- |:---------------------------------------------------- |
-| C# | dynamic 型                                                       |
-| VB.NET | Object 型 |
+## インストール
 
+マイドキュメントにある Visual Studio の Visualizers フォルダ（例えば私の場合、`C:\Users\Account\Documents\Visual Studio 2017\Visualizers`） に、dll を配置します。それだけです。
 
+## アンインストール
 
-### その２、動的参照（リフレクション利用）
-
-プロジェクトファイルに変更点を加えたくない場合は、動的参照して使います。
-ただし、やはり調査用のコードは書く必要があり、使い終わったらそれを削除するのを忘れないようにしてください。
-
-以下は、リフレクション処理をラップしたメソッドとそれを使う側のサンプルです。このサンプルは違いますが、シングルトンクラスにすることでどこからでもアクセスできるので、楽に使えるかもしれません。
-
-#### C# + .NET Framework 3.5 版
-
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Reflection;
-
-    static void Dump(object dumpInstance)
-    {
-        // 動的に使いたい場合
-        var dllFile = "ObjectVisualization.dll";
-        if (!File.Exists(dllFile))
-        {
-            Console.WriteLine($"not found dll: ->\r\n{dllFile}");
-            return;
-        }
-
-        // dll の参照追加したようなもの
-        var asm = Assembly.LoadFrom(dllFile);
-
-        // ObjectWatcher.Instance で生成されたインスタンスを取得したようなもの
-        var classType = asm.GetType("ObjectVisualization.ObjectWatcher");
-        var instanceType = classType.GetProperty("Instance");
-        var instance = instanceType.GetValue(null, null);
-
-        // Show() メソッドを呼び出したようなもの
-        //var langEnumType = asm.GetType("ObjectVisualization.LanguageTypes");
-        //var enumCSharp = 0;
-        //var enumVBNET = 1;
-        //var enumInstance = Convert.ChangeType(enumCSharp, Enum.GetUnderlyingType(langEnumType));
-
-        var showMethod = classType.GetMethod("Show");
-        //showMethod.Invoke(instance, new object[] { enumInstance });
-        showMethod.Invoke(instance, new object[] { null });
-
-        // Dump() メソッドを呼び出したようなもの
-        var dumpMethod = classType.GetMethod("Dump");
-        dumpMethod.Invoke(instance, new object[] { dumpInstance, new System.Diagnostics.StackFrame(1, true) });
-
-        // Close() メソッドを呼び出したようなもの
-        //Console.ReadKey();
-        //var closeMethod = classType.GetMethod("Close");
-        //closeMethod.Invoke(instance, null);
-    }
-
-    static void Main(string[] args)
-    {
-        Dump("hello, world");
-
-        var items = new List<KeyValuePair<string, int>>();
-        items.Add(new KeyValuePair<string, int>("aaa", 10));
-        items.Add(new KeyValuePair<string, int>("bbb", 20));
-        items.Add(new KeyValuePair<string, int>("ccc", 30));
-        Dump(items);
-
-        Console.ReadKey();
-        Console.WriteLine("");
-    }
-
-
-
-#### C# + .NET Framework 4.7.2 版
-
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Reflection;
-
-    static void Dump(object dumpInstance)
-    {
-        // 動的に使いたい場合
-        var dllFile = "ObjectVisualization.dll";
-        if (!File.Exists(dllFile))
-        {
-            Console.WriteLine($"not found dll: ->\r\n{dllFile}");
-            return;
-        }
-
-        // dll の参照追加したようなもの
-        var asm = Assembly.LoadFrom(dllFile);
-
-        // ObjectWatcher.Instance で生成されたインスタンスを取得したようなもの
-        var classType = asm.GetType("ObjectVisualization.ObjectWatcher");
-        var instanceType = classType.GetProperty("Instance");
-        var instance = instanceType.GetValue(null, null);
-
-        // Show() メソッドを呼び出したようなもの
-        //var langEnumType = asm.GetType("ObjectVisualization.LanguageTypes");
-        //var enumCSharp = 0;
-        //var enumVBNET = 1;
-        //var enumInstance = Convert.ChangeType(enumCSharp, Enum.GetUnderlyingType(langEnumType));
-
-        var showMethod = classType.GetMethod("Show");
-        //showMethod.Invoke(instance, new object[] { enumInstance });
-        showMethod.Invoke(instance, new object[] { null });
-
-        // Dump() メソッドを呼び出したようなもの
-        var callerInfo = new System.Diagnostics.StackFrame(1, true);
-        var sourceFilePath = callerInfo.GetFileName();
-        var memberName = callerInfo.GetMethod().Name;
-        var sourceLineNumber = callerInfo.GetFileLineNumber();
-
-        var dumpMethod = classType.GetMethod("Dump");
-        dumpMethod.Invoke(instance, new object[] { dumpInstance, sourceFilePath, memberName, sourceLineNumber });
-
-        // Close() メソッドを呼び出したようなもの
-        //Console.ReadKey();
-        //var closeMethod = classType.GetMethod("Close");
-        //closeMethod.Invoke(instance, null);
-    }
-
-    static void Main(string[] args)
-    {
-        Dump("hello, world");
-
-        var items = new List<KeyValuePair<string, int>>();
-        items.Add(new KeyValuePair<string, int>("aaa", 10));
-        items.Add(new KeyValuePair<string, int>("bbb", 20));
-        items.Add(new KeyValuePair<string, int>("ccc", 30));
-        Dump(items);
-
-        Console.ReadKey();
-        Console.WriteLine("");
-    }
-
-
-#### VB.NET + .NET Framework 3.5 版
-
-    Imports System.IO
-    Imports System.Reflection
-
-    Sub Dump(ByVal dumpInstance As Object)
-
-        ' 動的に使いたい場合
-        Dim dllFile As String = "ObjectVisualization.dll"
-        If Not File.Exists(dllFile) Then
-            Console.WriteLine($"not found dll: ->{vbNewLine}{dllFile}")
-            Return
-        End If
-
-        ' dll の参照追加したようなもの
-        Dim asm As Assembly = Assembly.LoadFrom(dllFile)
-
-        ' ObjectWatcher.Instance で生成されたインスタンスを取得したようなもの
-        Dim classType As Type = asm.GetType("ObjectVisualization.ObjectWatcher")
-        Dim instanceType As PropertyInfo = classType.GetProperty("Instance")
-        Dim instance As Object = instanceType.GetValue(Nothing, Nothing)
-
-        ' Show() メソッドを呼び出したようなもの
-        Dim langEnumType As Type = asm.GetType("ObjectVisualization.LanguageTypes")
-        Dim enumCSharp As Integer = 0
-        Dim enumVBNET As Integer = 1
-        Dim enumInstance As Object = Convert.ChangeType(enumVBNET, [Enum].GetUnderlyingType(langEnumType))
-
-        Dim showMethod As MethodInfo = classType.GetMethod("Show")
-        showMethod.Invoke(instance, New Object() {enumInstance})
-
-        ' Dump() メソッドを呼び出したようなもの
-        Dim dumpMethod = classType.GetMethod("Dump")
-        dumpMethod.Invoke(instance, New Object() {dumpInstance, New StackFrame(1, True)})
-
-        ' Close() メソッドを呼び出したようなもの
-        'Console.ReadKey()
-        'Dim closeMethod As MethodInfo = classType.GetMethod("Close")
-        'closeMethod.Invoke(instance, Nothing)
-
-    End Sub
-
-    Sub Main()
-
-        Dump("hello, world")
-
-        Dim items As New List(Of KeyValuePair(Of String, Integer))
-        items.Add(New KeyValuePair(Of String, Integer)("aaa", 10))
-        items.Add(New KeyValuePair(Of String, Integer)("bbb", 20))
-        items.Add(New KeyValuePair(Of String, Integer)("ccc", 30))
-        Dump(items)
-
-        Console.ReadKey()
-        Console.WriteLine("")
-
-    End Sub
-
-
-
-#### VB.NET + .NET Framework 4.7.2 版
-
-    Imports System.IO
-    Imports System.Reflection
-
-    Sub Dump(ByVal dumpInstance As Object)
-
-        ' 動的に使いたい場合
-        Dim dllFile As String = "ObjectVisualization.dll"
-        If Not File.Exists(dllFile) Then
-            Console.WriteLine($"not found dll: ->{vbNewLine}{dllFile}")
-            Return
-        End If
-
-        ' dll の参照追加したようなもの
-        Dim asm As Assembly = Assembly.LoadFrom(dllFile)
-
-        ' ObjectWatcher.Instance で生成されたインスタンスを取得したようなもの
-        Dim classType As Type = asm.GetType("ObjectVisualization.ObjectWatcher")
-        Dim instanceType As PropertyInfo = classType.GetProperty("Instance")
-        Dim instance As Object = instanceType.GetValue(Nothing, Nothing)
-
-        ' Show() メソッドを呼び出したようなもの
-        Dim langEnumType As Type = asm.GetType("ObjectVisualization.LanguageTypes")
-        Dim enumCSharp As Integer = 0
-        Dim enumVBNET As Integer = 1
-        Dim enumInstance As Object = Convert.ChangeType(enumVBNET, [Enum].GetUnderlyingType(langEnumType))
-
-        Dim showMethod As MethodInfo = classType.GetMethod("Show")
-        showMethod.Invoke(instance, New Object() {enumInstance})
-
-        ' Dump() メソッドを呼び出したようなもの
-        Dim callerInfo As New StackFrame(1, True)
-        Dim sourceFilePath As String = callerInfo.GetFileName()
-        Dim memberName As String = callerInfo.GetMethod().Name
-        Dim sourceLineNumber As Integer = callerInfo.GetFileLineNumber()
-
-        Dim dumpMethod = classType.GetMethod("Dump")
-        dumpMethod.Invoke(instance, New Object() {dumpInstance, sourceFilePath, memberName, sourceLineNumber})
-
-        ' Close() メソッドを呼び出したようなもの
-        'Console.ReadKey()
-        'Dim closeMethod As MethodInfo = classType.GetMethod("Close")
-        'closeMethod.Invoke(instance, Nothing)
-
-    End Sub
-
-    Sub Main()
-
-        Dump("hello, world")
-
-        Dim items As New List(Of KeyValuePair(Of String, Integer))
-        items.Add(New KeyValuePair(Of String, Integer)("aaa", 10))
-        items.Add(New KeyValuePair(Of String, Integer)("bbb", 20))
-        items.Add(New KeyValuePair(Of String, Integer)("ccc", 30))
-        Dump(items)
-
-        Console.ReadKey()
-        Console.WriteLine("")
-
-    End Sub
-
-
-
-
-調査コードを書いたら、後はデバッグ実行します。ブレークポイントを設定しないで一気に実行してもいいですし、１行ずつステップ実行してもいいです。
-
-
+上記に配置した dll を削除します。
 
 ## ダウンロード
 
@@ -362,12 +112,9 @@ Show メソッドの引数で、出力形式を VB.NET に設定します。
 | 項目 | 値                                                               |
 | ----- |:---------------------------------------------------- |
 | ターゲット言語 | C# / VB.NET                                                       |
-| ターゲットフレームワーク | .NET Framework 3.5 版 / 4.7.2 版 |
+| ターゲットフレームワーク | .NET Framework 3.5 版 / 4.X 版 |
 
-
-それ以外が欲しい方は、プロジェクト一式をダウンロードしてきて、ターゲットフレームワークを切り替えてリビルドすると作成できます。もしくは空のプロジェクトを作成して、ソースファイルを追加するなどです。
-
-
+ソースコードは、.NET Framework 3.5 版 と 4.0 版をメンテナンスしています。Visual Studio の仕様的に、開いているソースコードが .NET Framework 3.5 の場合は、.NET Framework 3.5 版のライブラリを、.NET Framework 4.X の場合は、.NET Framework 4.0 版のライブラリを配置します。つまり、使うソースコードの .NET Framework バージョンによって、ライブラリを切り替える必要があります。同名で名前空間なども同一のため、両方配置は無理なはずです。
 
 ## 開発環境
 
@@ -376,15 +123,6 @@ Show メソッドの引数で、出力形式を VB.NET に設定します。
 | OS   | Windows 10 Pro (64 bit)                              |
 | IDE  | Visual Studio Community 2017                     |
 | 言語 | C#                                                       |
-| 種類 | クラスライブラリ (.NET Framework 3.5 版 / 4.7.2 版) |
-
-
-
-## 設計思想
-
-完コピは目的ではないため、未実装の機能があったりします。また、一部の表現方法に差異があります。こっちの方が分かりやすいと思ったからとか、技術的に実現不可だったからとか、そういう理由からです。ただ、より良くするために将来直すかもです。
-
-バグ指摘・要望、等々を受け付けています。ご連絡をお待ちしております。この時、もしも可能でしたらサンプルコードなどのお力添えがあると嬉しいです。
-
+| 種類 | クラスライブラリ (.NET Framework 3.5 版 / 4.0 版) |
 
 

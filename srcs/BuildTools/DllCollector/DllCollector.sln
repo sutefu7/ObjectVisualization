@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.572
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ObjectVisualization", "ObjectVisualization\ObjectVisualization.csproj", "{E610C60D-24D5-48BB-917F-C1346C48B8F1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DllCollector", "DllCollector\DllCollector.csproj", "{7B72E814-3567-4FE3-AD54-9413C7C66AE3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,15 +11,15 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{E610C60D-24D5-48BB-917F-C1346C48B8F1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E610C60D-24D5-48BB-917F-C1346C48B8F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E610C60D-24D5-48BB-917F-C1346C48B8F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E610C60D-24D5-48BB-917F-C1346C48B8F1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7B72E814-3567-4FE3-AD54-9413C7C66AE3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7B72E814-3567-4FE3-AD54-9413C7C66AE3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7B72E814-3567-4FE3-AD54-9413C7C66AE3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7B72E814-3567-4FE3-AD54-9413C7C66AE3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {9C2D3339-06B9-402D-8941-F01BAFE6C004}
+		SolutionGuid = {83A28A54-97CD-4646-9DD6-F72EEDB948AB}
 	EndGlobalSection
 EndGlobal
