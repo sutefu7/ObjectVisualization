@@ -57,6 +57,8 @@ XmlDocument, XmlElement, XDocument, XElement は、構造とブラウザ表示�
 
 ![サンプルその7](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image07.png)
 
+チェック欄にチェックを付けたら、いったんビジュアライザー画面を閉じます。続けて、任意のタイミングでビジュアライザーを表示させます。
+
 ![サンプルその8](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image08.png)
 
 この機能を使うと、dll があるフォルダ内に作業用フォルダが作成され、この中にテキストファイルとしてデータを保存したり削除したりします。
