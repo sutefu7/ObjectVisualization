@@ -11,7 +11,7 @@
 
 例えば、Visual Studio 2017 だと、テキスト、XML、HTML、DataSet 向けのビジュアライザーなどが標準搭載されています。DataSet 向けだとこういうのです。
 
-image01.png
+![サンプルその1](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image01.png)
 
 例えば DataTable はウォッチウィンドウでツリー展開して見るよりも、表形式で見たほうが分かりやすいです。こんな便利なビジュアライザーをもっと多くの型で使えたらいいのに。という困り事から作成しようと思いました。
 
@@ -21,13 +21,13 @@ image01.png
 
 DataRow, DataRowView, List<T> などのコレクション系の型に対して、表形式で見られるビジュアライザーを用意しました。
 
-image02.png
+![サンプルその2](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image02.png)
 
 ただし、ビジュアライザー側の仕様的に、インターフェース型は未対応っぽくて、クラス別になるため、現状未対応のコレクション系もあるかもしれませんが、随時対応していきたいと考えています。
 
 また、表形式（２次元配列）で表示するのですが、特に Entity Framework の DbSet<T> などでは int や string などのプリミティブ型以外に、リレーションとしてデータクラスを持っていると思います。この場合、そのインスタンスの ToString() した名前空間が表示されるという制限になります。
 
-image03.png
+![サンプルその3](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image03.png)
 
 このサンプル画像で出ていますが、Entity Framework は解決できないバグがあるため未対応です。よって、DbContext は未対応、DbSet<T> は ToList() に変換したものでビジュアライザーで見ていただく使い方になります。この制限は IEnumerable<T> 系も同様です。
 
@@ -35,15 +35,15 @@ image03.png
 
 XmlDocument, XmlElement, XDocument, XElement は、構造とブラウザ表示の２部構成のビジュアライザーを用意しました。
 
-image04.png
+![サンプルその4](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image04.png)
 
 ### その他全部の型
 
 これまで紹介してきた各ビジュアライザーとは別に、全ての型に対応するビジュアライザーを用意しました。もちろんインターフェース型にも対応しています。
 
-image05.png
+![サンプルその5](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image05.png)
 
-image06.png
+![サンプルその6](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image06.png)
 
 ただし、object 型に対応させることができないため、代わりに WeakReference 型を指定しています。使うときはウォッチウィンドウなどから `new WeakReference(xxx)` として、WeakReference 型に変換することでビジュアライザーに渡すことができます。
 
@@ -55,9 +55,9 @@ image06.png
 
 現在表示中のデータを、次回表示時に再度表示させることができます。関連する変数同士を見たいときに使います。
 
-image07.png
+![サンプルその7](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image07.png)
 
-image08.png
+![サンプルその8](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image08.png)
 
 この機能を使うと、dll があるフォルダ内に作業用フォルダが作成され、この中にテキストファイルとしてデータを保存したり削除したりします。
 
@@ -74,13 +74,13 @@ image08.png
 
 前述の `時系列の履歴管理` を応用して、同じ型でかつ同じデータ数の場合だけなのですが、差分チェック機能を搭載しています。想定場面としては、同じ変数でも、ある行を通る前の変数、通った後の変数の見比べです。
 
-image09.png
+![サンプルその9](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image09.png)
 
 #### 継承元クラスツリー
 
 `new WeakReference(xxx.GetType())` みたいに Type 型を渡すことで、継承関係を見ることができます。
 
-image10.png
+![サンプルその10](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image10.png)
 
 #### コールツリー
 
@@ -88,7 +88,7 @@ image10.png
 
 やり方は、ウォッチウィンドウなどで `new WeakReference(new System.Diagnostics.StackTrace(true).GetFrames())` と入力します。
 
-image11.png
+![サンプルその11](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image11.png)
 
 ## 旧仕様
 
