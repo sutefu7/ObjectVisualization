@@ -19,17 +19,17 @@
 
 ### コレクション系
 
-DataRow, DataRowView, List<T> などのコレクション系の型に対して、表形式で見られるビジュアライザーを用意しました。
+DataRow, DataRowView, List&lt;T&gt; などのコレクション系の型に対して、表形式で見られるビジュアライザーを用意しました。
 
 ![サンプルその2](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image02.png)
 
 ただし、ビジュアライザー側の仕様的に、インターフェース型は未対応っぽくて、クラス別になるため、現状未対応のコレクション系もあるかもしれませんが、随時対応していきたいと考えています。
 
-また、表形式（２次元配列）で表示するのですが、特に Entity Framework の DbSet<T> などでは int や string などのプリミティブ型以外に、リレーションとしてデータクラスを持っていると思います。この場合、そのインスタンスの ToString() した名前空間が表示されるという制限になります。
+また、表形式（２次元配列）で表示するのですが、特に Entity Framework の DbSet&lt;T&gt; などでは int や string などのプリミティブ型以外に、リレーションとしてデータクラスを持っていると思います。この場合、そのインスタンスの ToString() した名前空間が表示されるという制限になります。
 
 ![サンプルその3](https://raw.githubusercontent.com/sutefu7/ObjectVisualization/master/docs/images/image03.png)
 
-このサンプル画像で出ていますが、Entity Framework は解決できないバグがあるため未対応です。よって、DbContext は未対応、DbSet<T> は ToList() に変換したものでビジュアライザーで見ていただく使い方になります。この制限は IEnumerable<T> 系も同様です。
+このサンプル画像で出ていますが、Entity Framework は解決できないバグがあるため未対応です。よって、DbContext は未対応、DbSet&lt;T&gt; は ToList() に変換したものでビジュアライザーで見ていただく使い方になります。この制限は IEnumerable&lt;T&gt; 系も同様です。
 
 ### XML 操作系
 
